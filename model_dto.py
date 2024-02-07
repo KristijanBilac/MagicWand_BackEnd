@@ -1,21 +1,24 @@
 from http.client import HTTPException
+from typing import Optional
 
 from pydantic import BaseModel
 from enum import Enum
 
 
 # DTO - data transfer object
-class UserCreateDTO(BaseModel):
+class UserIn(BaseModel):
     username: str
     password: str
 
 
-class UserDTO(BaseModel):
+class UserOut(BaseModel):
     id: int
     username: str
 
+
 class UserOwnerOut(BaseModel):
     username: str
+
 
 class WoodType(str, Enum):
     alder = "alder"
@@ -48,3 +51,12 @@ class CustomException(HTTPException):
 class ErrorResponse(BaseModel):
     detail: str
     status_code: int
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class DataToken(BaseModel):
+    id: Optional[str] = None

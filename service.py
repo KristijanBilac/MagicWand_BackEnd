@@ -1,7 +1,8 @@
 from http import HTTPStatus
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from model_dto import UserDTO, MagicWandDTO, UserCreateDTO, CustomException, MagicWandOutDTO, UserOwnerOut
+from token_handler import decodeJWT
+from model_dto import UserOut, MagicWandDTO, UserIn, CustomException, MagicWandOutDTO, UserOwnerOut
 from db_model import User, MagicWand
 
 
@@ -10,7 +11,12 @@ async def get_owner_username(owner_id: int, db: Session) -> UserOwnerOut:
     return UserOwnerOut(username=owner.username)
 
 
-async def get_specific_magic_wand(magic_wand_id: int, db: Session) -> MagicWandOutDTO:
+async def get_specific_magic_wand(magic_wand_id: int,token: str,  db: Session) -> MagicWandOutDTO:
+    decode_token = decodeJWT(token)
+    if decode_token is None:
+        raise CustomException(
+            HTTPStatus.UNAUTHORIZED, "Token is invalid or expired. Please login again."
+        )
     magic_wand = db.query(MagicWand).filter(MagicWand.wand_id == magic_wand_id).first()
     owner = await get_owner_username(magic_wand.owner_id, db)
     return MagicWandOutDTO(flexibility=magic_wand.flexibility, owner=owner, length=magic_wand.length,
@@ -26,7 +32,12 @@ async def get_all_magic_wands_with_owner(db: Session):
     return magic_wands_with_limited_info
 
 
-async def create_new_magic_wand(new_magic_wand: MagicWandDTO, db: Session) -> MagicWandDTO:
+async def create_new_magic_wand(new_magic_wand: MagicWandDTO, token: str,  db: Session) -> MagicWandDTO:
+    decode_token = decodeJWT(token)
+    if decode_token is None:
+        raise CustomException(
+            HTTPStatus.UNAUTHORIZED, "Token is invalid or expired. Please login again."
+        )
     db_new_magic_wand = MagicWand(flexibility=new_magic_wand.flexibility, owner_id=new_magic_wand.owner,
                                   length=new_magic_wand.length, wood=new_magic_wand.wood)
     db.add(db_new_magic_wand)
@@ -47,7 +58,7 @@ async def verify_password(password: str, hashed_password: str) -> bool:
     return bcrypt_context.verify(password, hashed_password)
 
 
-async def create_user(user: UserCreateDTO, db: Session):
+async def create_user(user: UserIn, db: Session):
     found_user = db.query(User).filter(User.username == user.username).first()
 
     if found_user is not None:
@@ -62,10 +73,10 @@ async def create_user(user: UserCreateDTO, db: Session):
     db.commit()
     db.refresh(db_user)
 
-    return UserDTO(id=db_user.user_id, username=db_user.username)
+    return UserOut(id=db_user.user_id, username=db_user.username)
 
 
-async def login_user(user: UserCreateDTO, db: Session) -> UserDTO:
+async def user_verification(user: UserIn, db: Session) -> UserOut:
     found_user = db.query(User).filter(User.username == user.username).first()
 
     if found_user is None:
@@ -78,4 +89,4 @@ async def login_user(user: UserCreateDTO, db: Session) -> UserDTO:
             HTTPStatus.UNAUTHORIZED, f"Wrong password."
         )
 
-    return UserDTO(id=found_user.user_id, username=found_user.username)
+    return UserOut(id=found_user.user_id, username=found_user.username)
