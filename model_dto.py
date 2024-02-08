@@ -1,6 +1,5 @@
 from http.client import HTTPException
 from typing import Optional
-
 from pydantic import BaseModel
 from enum import Enum
 
@@ -42,15 +41,22 @@ class MagicWandOutDTO(BaseModel):
     length: int
     wood: WoodType
 
+class MagicWandOutDTO2(BaseModel):
+    flexibility: str
+    owner: str
+    length: int
+    wood: WoodType
 
-class CustomException(HTTPException):
-    def __init__(self, status_code, detail: str):
-        super().__init__(status_code=status_code, detail=detail)
 
 
 class ErrorResponse(BaseModel):
     detail: str
     status_code: int
+
+
+class CustomException(HTTPException):
+    def __init__(self, status_code, detail: str):
+        super().__init__(status_code=status_code, detail=detail)
 
 
 class Token(BaseModel):
